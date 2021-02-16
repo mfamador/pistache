@@ -1,0 +1,78 @@
+# We use `configor` to load configurations
+# See https://github.com/jinzhu/configor for more information
+
+# Log level and display mode information. See https://github.com/rs/zerolog
+logger:
+  # Log level. Can be one of: debug, info, warn, error, fatal, panic
+  level: debug
+  # Use pretty (human-readable) logs
+  pretty: true
+
+# HTTP server config
+server:
+  port: 8080
+
+# Services global configuration. Will probably have one key per service
+services:
+  # Config options for the cache service
+  cache:
+    # Redis connection configuration
+    # Set to nil to disable REDIS caching
+    redis:
+      # Servers is an array of REDIS cluster instances.
+      # Since we have auto-discovery, we only need to specify one
+      servers:
+      - host: localhost
+        port: 7000
+    # Paths that will never be cached
+    exceptions:
+    - /metrics
+    - /healthz
+    # HTTP methods that will be considered for cache
+    methods:
+    - GET
+    - HEAD
+    - OPTIONS
+    # How long to keep data cached (in seconds)
+    ttl:
+      # 2XX HTTP response codes
+      success: 3600
+      # 4XX and 5XX HTTP response codes
+      error: 5
+    # Headers with URI of original request (usually sent by a reverse proxy)
+    # If set, these will replace the request URL when computing the cache key
+    forwardingHeaders:
+    - X-Forwarded-URI
+    # What information should be used to create the cache key of a request
+    hash:
+      # Prefix to use before the hash and after deployment env
+      prefix: app
+      # Should we use the URL path of the request?
+      usePath: true
+      # What headers do we include
+      # If empty, we include all of them
+      headers:
+      - X-Scopes
+      - X-Clusters
+      - X-Auth-Token
+      # Do we include specific query params?
+      # If empty, we include all of them
+      queryParams:
+      # Paths where we want to compute the cache key differently
+      overrides:
+      - originalPath: /authorization
+        usePath: false
+        headers:
+        - X-Auth-Token
+        queryParams:
+        - apikey
+  # Config for the proxy service
+  proxy:
+    # Upstream targets definition, a.k.a where requests are routed to
+    # Targets are used in a round robin fashion
+    upstreams:
+    - port: 8000
+      host: localhost
+
+# Deployment env scope
+deploymentEnv: ""
